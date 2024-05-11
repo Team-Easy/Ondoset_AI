@@ -135,7 +135,7 @@ for user in df_limit['userId'].unique():
         train, temp = train_test_split(category_data, test_size=0.5, random_state=42)
         
         # 남은 데이터를 반으로 나누어 검증 데이터와 테스트 데이터로 분할
-        val, test = train_test_split(temp, test_size=0.3, random_state=42)
+        val, test = train_test_split(temp, test_size=0.5, random_state=42)
         
         train_data.append(train)
         val_data.append(val)
@@ -330,7 +330,7 @@ def save_variables_optimizer(variables, optimizer, filename):
 
 # 훈련된 tf.Variable 파일로 저장
 model_version = '1.0'
-checkpoint_path = f'../model/{model_version}/'
+checkpoint_path = f'../model/CF/{model_version}/'
 os.makedirs(checkpoint_path, exist_ok=True)
 
 save_variables_optimizer({"O": O, "U": U, "b": b}, optimizer,  checkpoint_path+"parameters.ckpt")

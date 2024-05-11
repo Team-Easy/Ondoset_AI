@@ -208,9 +208,9 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
             predict = df_predict.columns.astype(str)
             
             # user i에 대한 예측을 파일로 저장
-            os.makedirs(f'../data/predictions/male/user_{i+1}', exist_ok=True)
+            os.makedirs(f'../data/predictions/CF/male/user_{i+1}', exist_ok=True)
             # Save predictions to file in user's directory
-            with open(f'../data/predictions/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
+            with open(f'../data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
                 for item in predict:
                     f.write("%s\n" % item)
 
