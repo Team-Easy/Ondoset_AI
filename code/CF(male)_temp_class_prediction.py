@@ -186,11 +186,86 @@ for iter in range(iterations):
         train_loss = cost_value.numpy()
         print({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})
 
+def to_id(predict) :
+    item_dictionary = {
+    "반팔 티": 1,
+    "긴팔 티": 2,
+    "민소매 티": 3,
+    "반팔 니트": 4,
+    "니트": 5,
+    "후드티": 6,
+    "맨투맨": 7,
+    "반팔 셔츠/블라우스": 8,
+    "셔츠/블라우스": 9,
+    "점프슈트": 10,
+    "미니/미디원피스": 11,
+    "롱원피스": 12,
+    "반바지": 13,
+    "데님팬츠": 14,
+    "면바지": 15,
+    "슬랙스": 16,
+    "트레이닝/조거 팬츠": 17,
+    "카고바지": 18,
+    "레깅스": 19,
+    "가죽 바지": 20,
+    "나일론 팬츠": 21,
+    "미니/미디스커트": 22,
+    "롱스커트": 23,
+    "집업": 24,
+    "재킷": 25,
+    "바람막이": 26,
+    "점퍼": 27,
+    "가디건": 28,
+    "코트": 29,
+    "조끼": 30,
+    "패딩조끼": 31,
+    "패딩": 32,
+    "롱패딩": 33,
+    "운동화": 34,
+    "스니커즈/캔버스": 35,
+    "구두/로퍼": 36,
+    "힐": 37,
+    "샌들/슬리퍼": 38,
+    "레더부츠": 39,
+    "어그부츠": 40,
+    "레인부츠": 41,
+    "패딩슈즈": 42,
+    "비니": 43,
+    "털 모자": 44,
+    "기타 모자": 45,
+    "마스크": 46,
+    "머플러": 47,
+    "스카프": 48,
+    "장갑": 49,
+    "양말": 50,
+    "장목양말": 51,
+    "니삭스": 52,
+    "스타킹": 53,
+    "상의 없음": 54,
+    "아우터 없음": 55,
+    "하의 없음": 56,
+    "신발 없음": 57,
+    "액세서리 없음": 58
+    }
+    
+    predict_result = []
+    for i in predict:
+        items = i.split(', ')
+        predict_id = []
+        for j in items:
+            # 만약 items에 '없음'이라는 문자가 포함되면 continue
+            if '없음' in j:
+                continue
+            predict_id.append(item_dictionary[j])
+        predict_result.append(predict_id)
+    return predict_result
+
 def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
     # 예측을 수행하기 위해 모든 user-item에 대한 예측값을 계산
     p = np.matmul(O.numpy(), np.transpose(U.numpy())) + b.numpy()
     # user_category_not_valid에 해당하지 않는 경우에 대해 precision, recall, f1_score 계산
     # 평균을 위한 초기화
+    precision_m, recall_m, f1_score_m, count_m = 0, 0, 0, 0
     for i in range(UI_temp.shape[0]):
         for category in labels:
             
@@ -203,9 +278,10 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
             ix = tf.argsort(my_predictions, direction='ASCENDING')
 
             df_predict = UI_temp[UI_temp.columns[ix[0:3]]].copy()
-            df_predict = df_predict.round(0)
             # df_predict의 columns와 test_data_df의 '옷 조합' column을 비교하여 일치하는 경우의 개수를 계산
             predict = df_predict.columns.astype(str)
+            
+            predict_id = to_id(predict)
             
             # user i에 대한 예측을 파일로 저장
             os.makedirs(f'../data/predictions/CF/male/user_{i+1}', exist_ok=True)
@@ -213,6 +289,9 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
             with open(f'../data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
                 for item in predict:
                     f.write("%s\n" % item)
+                for item in predict_id:
+                    f.write("%s\n" % item)
+
 
 predict(O, U, b, o_mean, count, count_weight, UI_temp, labels)
 
