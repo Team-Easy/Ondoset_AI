@@ -185,6 +185,10 @@ for iter in range(iterations):
         train_loss = cost_value.numpy()
         '''print({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})'''
 
+# U의 값을 csv 파일로 저장
+df_U = pd.DataFrame(U.numpy(), index=UI_temp.index, columns=np.ndarray.tolist(np.arange(1, num_features+1)))
+df_U.to_csv('../data/similarity/User_latent_factors.csv')
+
 item_dictionary = {
     "반팔 티": 1,
     "긴팔 티": 2,
@@ -301,14 +305,21 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictiona
             
             predict_id = to_id(item_dictionary, predict)
             
+            thick = []
+            for predict in predict_id:
+                thick_comb = []
+                for item in predict:
+                    thick_comb.append('null')
+                thick.append(thick_comb)
+            
             # user i에 대한 예측을 파일로 저장
             os.makedirs(f'../data/predictions/CF/male/user_{i+1}', exist_ok=True)
             # Save predictions to file in user's directory
             with open(f'../data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
-                for item in predict:
-                    f.write("%s\n" % item)
                 for item in predict_id:
-                    f.write("%s\n" % item)
+                    f.write("%s\n" % item)   
+                for item in thick:
+                    f.write("%s\n" % item)          
 
 predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictionary)
 
