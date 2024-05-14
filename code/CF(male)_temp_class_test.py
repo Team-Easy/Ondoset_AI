@@ -4,6 +4,7 @@ import tensorflow as tf
 import keras
 import os
 import sys
+import json
 
 model_version, num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -124,5 +125,8 @@ def test(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_categor
 
 precision, recall, f1_score = test(O, U, b, o_mean, count, count_weight, test_data_df, UI_temp, labels, user_category_not_valid_df)
 
-print(f'평균 precision: {precision}, 평균 recall: {recall}, 평균 f1_score: {f1_score}')
+data = {'precision': [precision], 'recall': [recall], 'f1_score': [f1_score]}
+json_data = json.dumps(data)
+print(json_data)
+
 

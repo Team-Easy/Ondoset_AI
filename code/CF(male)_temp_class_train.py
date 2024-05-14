@@ -11,6 +11,7 @@ import keras
 from sklearn.model_selection import train_test_split
 import os
 import sys
+import json
 
 num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -321,7 +322,13 @@ for iter in range(iterations):
         history.append({'type': 'validation recall', 'epoch': iter + 1, 'value': recall})
         history.append({'type': 'validataion f1_score', 'epoch': iter + 1, 'value': f1_score})
 
-print(history)
+data = {
+    "train_result" : history,
+    "data_count" : df_combtest.shape[0]
+}
+json_data = json.dumps(data)
+print(json_data)
+
 
 def save_variables_optimizer(variables, optimizer, filename):
     checkpoint = tf.train.Checkpoint(variables=variables, optimizer=optimizer)

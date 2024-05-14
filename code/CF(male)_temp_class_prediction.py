@@ -11,13 +11,13 @@ from sklearn.model_selection import train_test_split
 import os
 import sys
 
+
 num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
 iterations = int(iterations)
 learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
-print(num_features, iterations, learning_rate, lambda_, count_weight)
 
 # csv 파일을 dataframe으로 변환
 df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
@@ -134,7 +134,6 @@ Y = np.array(UI_temp)
 Y = Y.T
 count = np.array(UI_count_div)
 count = count.T
-print(Y.shape)
 R = Y != 0 
 n_u = Y.shape[1]
 n_o = Y.shape[0]
@@ -184,10 +183,9 @@ for iter in range(iterations):
     # Log periodically.
     if (iter + 1) % 20 == 0 or iter == 0:
         train_loss = cost_value.numpy()
-        print({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})
+        '''print({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})'''
 
-def to_id(predict) :
-    item_dictionary = {
+item_dictionary = {
     "반팔 티": 1,
     "긴팔 티": 2,
     "민소매 티": 3,
@@ -247,7 +245,8 @@ def to_id(predict) :
     "신발 없음": 57,
     "액세서리 없음": 58
     }
-    
+
+def to_id(item_dictionary, predict) :
     predict_result = []
     for i in predict:
         items = i.split(', ')
@@ -257,10 +256,29 @@ def to_id(predict) :
             if '없음' in j:
                 continue
             predict_id.append(item_dictionary[j])
+        # predict_id를 sort
+        predict_id.sort()
         predict_result.append(predict_id)
     return predict_result
 
-def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
+def index_id(item_dictionary, columns) :
+    columns_id = []
+    for i in columns:
+        items = i.split(', ')
+        column_id = []
+        for j in items:
+            # 만약 items에 '없음'이라는 문자가 포함되면 continue
+            if '없음' in j:
+                continue
+            column_id.append(item_dictionary[j])
+        # predict_id를 sort
+        column_id.sort()
+        # colums_id를 문자열로 변환
+        column_id = ', '.join(map(str, column_id))
+        columns_id.append(column_id)
+    return columns_id
+
+def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictionary) :
     # 예측을 수행하기 위해 모든 user-item에 대한 예측값을 계산
     p = np.matmul(O.numpy(), np.transpose(U.numpy())) + b.numpy()
     # user_category_not_valid에 해당하지 않는 경우에 대해 precision, recall, f1_score 계산
@@ -281,7 +299,7 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
             # df_predict의 columns와 test_data_df의 '옷 조합' column을 비교하여 일치하는 경우의 개수를 계산
             predict = df_predict.columns.astype(str)
             
-            predict_id = to_id(predict)
+            predict_id = to_id(item_dictionary, predict)
             
             # user i에 대한 예측을 파일로 저장
             os.makedirs(f'../data/predictions/CF/male/user_{i+1}', exist_ok=True)
@@ -292,6 +310,31 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, ) :
                 for item in predict_id:
                     f.write("%s\n" % item)
 
+predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictionary)
 
-predict(O, U, b, o_mean, count, count_weight, UI_temp, labels)
+def satis(O, U, b, o_mean):
+    p = np.matmul(O.numpy(), np.transpose(U.numpy())) + b.numpy()
+    p = p + o_mean
+    return p
 
+p = satis(O, U, b, o_mean)
+p_round = np.round(p, 1)
+UI_satis = pd.DataFrame(p_round, columns=UI_temp.index, index=UI_temp.columns)
+
+# UI_satis의 각 index를 to_id 함수를 이용하여 id로 변환
+UI_satis_id = UI_satis.copy()
+UI_satis_id.index = index_id(item_dictionary, UI_satis_id.index.astype(str))
+
+for i in range(UI_satis_id.shape[1]):
+    user_id = UI_satis_id.columns[i]
+    temp = UI_satis_id.copy()
+    temp = temp[[user_id]]
+    temp.columns = ['예측값']
+    temp.reset_index(inplace=True)
+    temp.columns = ['옷 id', '예측값']
+    # UI_satis의 해당하는 user_id column의 각 값에 대해 j값을 뺌
+    # user i에 대한 예측을 파일로 저장
+    os.makedirs(f'../data/satisfaction/CF/male/user_{i+1}', exist_ok=True)
+    temp.to_csv(f'../data/satisfaction/CF/male/user_{user_id}/satifaction.csv', index=False, header=True)
+
+print('complete!')
