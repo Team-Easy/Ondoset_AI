@@ -13,7 +13,7 @@ lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
 # 저장된 모델 버전 및 체크포인트 경로 설정
-checkpoint_path = f'/home/ksy/code/ondoset_U/ai/model/CF/train/{model_version}/'
+checkpoint_path = f'/home/t24119/v1.0src/ai/model/CF/train/{model_version}/'
 
 # CSV 파일 불러오기
 UI_temp = pd.read_csv(checkpoint_path + 'UI_temp.csv').drop('userId', axis=1)

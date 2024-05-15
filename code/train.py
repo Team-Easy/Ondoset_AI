@@ -21,8 +21,8 @@ lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
+df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -327,7 +327,7 @@ def save_variables_optimizer(variables, optimizer, filename):
 
 # 훈련된 tf.Variable 파일로 저장
 model_version = version
-checkpoint_path = f'/home/ksy/code/ondoset_U/ai/model/CF/train/{model_version}/'
+checkpoint_path = f'/home/t24119/v1.0src/ai/model/CF/train/{model_version}/'
 os.makedirs(checkpoint_path, exist_ok=True)
 
 save_variables_optimizer({"O": O, "U": U, "b": b}, optimizer,  checkpoint_path+"parameters.ckpt")
