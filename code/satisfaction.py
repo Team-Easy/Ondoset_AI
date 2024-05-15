@@ -11,13 +11,13 @@ from sklearn.model_selection import train_test_split
 import os
 import sys
 
-user_id, today, items_id = sys.argv[1:]
+user_id, today, items_id, thicknesses = sys.argv[1:]
 user_id = int(user_id)
 today = float(today)
 
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('../data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
+df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -37,7 +37,7 @@ bins=np.round(np.arange(min_temp -5, max_temp+5, 5), 1)
 labels=np.arange(0, (max_temp-min_temp)//5+2)
 today_class = pd.cut([today], bins=bins, labels=labels).astype('float64')
 
-path = f'../data/satisfaction/CF/male/user_{user_id}/satifaction.csv'
+path = f'/home/t24119/v1.0src/ai/data/satisfaction/CF/male/user_{user_id}/satifaction.csv'
 
 df_satisfaction = pd.read_csv(path)
 

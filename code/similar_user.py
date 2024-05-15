@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 user_id,= sys.argv[1:]
 user_id = int(user_id)
 
-latent_factor = pd.read_csv('../data/similarity/User_latent_factors.csv')
+latent_factor = pd.read_csv('/home/t24119/v1.0src/ai/data/similarity/User_latent_factors.csv')
 
 latent_columns = latent_factor.columns[1:]
 

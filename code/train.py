@@ -13,17 +13,16 @@ import os
 import sys
 import json
 
-num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
+version, num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
 iterations = int(iterations)
 learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
-'''print(num_features, iterations, learning_rate, lambda_, count_weight)'''
 
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('../data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/outfit(male)/outfit(male).csv')
+df_weather = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -193,7 +192,6 @@ Y = np.array(UI_temp)
 Y = Y.T
 count = np.array(UI_count_div)
 count = count.T
-print(Y.shape)
 R = Y != 0 
 n_u = Y.shape[1]
 n_o = Y.shape[0]
@@ -237,7 +235,7 @@ optimizer = keras.optimizers.Adam(learning_rate = learning_rate)
 
 J = cofi_cost_func_v(O, U, b, Y_stand, R, 1.5)
 
-def metrics(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_category_not_valid, isTrain=False) :
+def metrics(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_category_not_valid) :
     # 예측을 수행하기 위해 모든 user-item에 대한 예측값을 계산
     p = np.matmul(O.numpy(), np.transpose(U.numpy())) + b.numpy()
     # user_category_not_valid에 해당하지 않는 경우에 대해 precision, recall, f1_score 계산
@@ -258,14 +256,6 @@ def metrics(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_cate
             df_predict = df_predict.round(0)
             # df_predict의 columns와 test_data_df의 '옷 조합' column을 비교하여 일치하는 경우의 개수를 계산
             predict = df_predict.columns.astype(str)
-            
-            if not isTrain:
-                # user i에 대한 예측을 파일로 저장
-                os.makedirs(f'../data/predictions/male/user_{i+1}', exist_ok=True)
-                # Save predictions to file in user's directory
-                with open(f'../data/predictions/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
-                    for item in predict:
-                        f.write("%s\n" % item)
             
             if i+1 in user_category_not_valid and category in user_category_not_valid[i+1]:
                 continue
@@ -317,7 +307,7 @@ for iter in range(iterations):
         val_loss = cofi_cost_func_v(O, U, b, Y_val_stand, R, lambda_).numpy()
         history.append({'type': 'validation_loss', 'epoch': iter + 1, 'value': val_loss})
 
-        precision, recall, f1_score = metrics(O, U, b, o_mean, count, count_weight, val_data_df, UI_temp, labels, user_category_not_valid, isTrain=True)
+        precision, recall, f1_score = metrics(O, U, b, o_mean, count, count_weight, val_data_df, UI_temp, labels, user_category_not_valid)
         history.append({'type': 'validation precision', 'epoch': iter + 1, 'value': precision})
         history.append({'type': 'validation recall', 'epoch': iter + 1, 'value': recall})
         history.append({'type': 'validataion f1_score', 'epoch': iter + 1, 'value': f1_score})
@@ -336,8 +326,8 @@ def save_variables_optimizer(variables, optimizer, filename):
 
 
 # 훈련된 tf.Variable 파일로 저장
-model_version = '1.0'
-checkpoint_path = f'../model/CF/train/{model_version}/'
+model_version = version
+checkpoint_path = f'/home/ksy/code/ondoset_U/ai/model/CF/train/{model_version}/'
 os.makedirs(checkpoint_path, exist_ok=True)
 
 save_variables_optimizer({"O": O, "U": U, "b": b}, optimizer,  checkpoint_path+"parameters.ckpt")

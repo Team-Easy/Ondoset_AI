@@ -1,23 +1,20 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import MultiLabelBinarizer
-import re
-from sklearn.feature_extraction.text import CountVectorizer
-import tensorflow as tf
-import keras
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 import requests
 from xml.etree import ElementTree as ET
-from datetime import datetime
+import datetime
+import time
+import json
+import warnings
 import sys
+warnings.filterwarnings('ignore')
 
-userId, lat, lon, date = sys.argv[1:]
+userId, lat, lon, date, timeFromToday = sys.argv[1:]
 userId = int(userId)
 date = int(date)
-print(userId, lat, lon, date)
+timeFromToday = int(timeFromToday)
 
 # epoch time을 datetime 형식으로 변환
 def epoch_to_datetime(epoch_time):
@@ -27,13 +24,18 @@ def epoch_to_datetime(epoch_time):
 def datetime_to_epoch(datetime_time):
     return int(datetime_time.timestamp())
 
+# epoch time을 datetime 객체로 변환
+dt = datetime.datetime.fromtimestamp(date+32400)
 
-datetime = epoch_to_datetime(date)
-# datetime에서 년월일 형식으로 변환
-today = datetime.strftime('%Y%m%d')
+# 시간이 23:10 ~ 00:10 사이인지 확인
+if dt.hour == 23 and dt.minute >= 10 or dt.hour == 0 and dt.minute <= 10:
+    # basedatetime = (dt - datetime.timedelta(timeFromToday)).date()
+    basedatetime = dt - datetime.timedelta(timeFromToday)
+else:
+    # basedatetime = (dt - datetime.timedelta(1 + timeFromToday)).date()
+    basedatetime = dt - datetime.timedelta(1 + timeFromToday)
 
-# Today's date
-today = datetime.today().strftime("%Y%m%d")
+basedate = basedatetime.date().strftime('%Y%m%d')
 
 # API endpoint
 url = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
@@ -44,27 +46,31 @@ service_key = "2tvkzWa/Da5wAH2C4F09CShggc7fixR0Jowlz4jhXWSCwlVk+AbL2Yxt7QmsCKRf0
 # Parameters
 params = {
     "serviceKey": service_key,
-    "numOfRows": 100,  # Increase the number of rows to get more temperature data
+    "numOfRows": 290 + 290 * timeFromToday,  # Increase the number of rows to get more temperature data
     "pageNo": 1,
-    "dataType": "XML",
-    "base_date": today,
-    "base_time": "0200",
+    "dataType": "JSON",
+    "base_date": basedate,
+    "base_time": "2300",
     "nx": lat,
     "ny": lon 
 }
 
 # Send request
 response = requests.get(url, params=params)
-print(response.content)
+print(response.content[:1000])
 
-# Parse XML response
-root = ET.fromstring(response.content)
+try:
+    data = response.json()
+except json.JSONDecodeError:
+    print("Error: Response is not in JSON format.")
+    exit()
 
 # Find temperature data
-temps = [float(item.find('fcstValue').text) for item in root.iter('item') if item.find('category').text == 'TMP']
-rain = [float(item.find('fcstValue').text) for item in root.iter('item') if item.find('category').text == 'PTY']
-wind = [float(item.find('fcstValue').text) for item in root.iter('item') if item.find('category').text == 'WSD']
-humidity = [float(item.find('fcstValue').text) for item in root.iter('item') if item.find('category').text == 'REH']
+temps = [float(item['fcstValue']) for item in data['response']['body']['items']['item'] if item['fcstDate'] == dt.date().strftime('%Y%m%d') and item['category'] == 'TMP']
+rain = [float(item['fcstValue']) for item in data['response']['body']['items']['item'] if item['fcstDate'] == dt.date().strftime('%Y%m%d') and item['category'] == 'PTY']
+wind = [float(item['fcstValue']) for item in data['response']['body']['items']['item'] if item['fcstDate'] == dt.date().strftime('%Y%m%d') and item['category'] == 'WSD']
+humidity = [float(item['fcstValue']) for item in data['response']['body']['items']['item'] if item['fcstDate'] == dt.date().strftime('%Y%m%d') and item['category'] == 'REH']
+print(dt.date().strftime('%Y%m%d'))
 
 # Calculate average temperature
 avg_temp = sum(temps) / len(temps)
@@ -74,16 +80,9 @@ rain = any(r > 0 for r in rain)
 avg_wind = sum(wind) / len(wind)
 avg_humidity = sum(humidity) / len(humidity)
 
-print(f"Today's average temperature: {avg_temp}")
-print(f"Today's minimum temperature: {min_temp}")
-print(f"Today's maximum temperature: {max_temp}")
-print(f"Is it raining today? {'Yes' if rain else 'No'}")
-print(f"Today's average wind speed: {avg_wind}")
-print(f"Today's average humidity: {avg_humidity}")
-
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('../data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
+df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)', '평균 풍속(m/s)', '평균 상대습도(%)']].copy()

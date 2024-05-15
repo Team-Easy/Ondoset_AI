@@ -20,8 +20,8 @@ lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('../data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/outfit(male)/outfit(male).csv')
+df_weather = pd.read_csv('/home/ksy/code/ondoset_U/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -183,12 +183,11 @@ for iter in range(iterations):
     # Log periodically.
     if (iter + 1) % 20 == 0 or iter == 0:
         train_loss = cost_value.numpy()
-        '''print({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})'''
 
 # U의 값을 csv 파일로 저장
 df_U = pd.DataFrame(U.numpy(), index=UI_temp.index, columns=np.ndarray.tolist(np.arange(1, num_features+1)))
-os.makedirs('../data/similarity', exist_ok=True)
-df_U.to_csv('../data/similarity/User_latent_factors.csv')
+os.makedirs('/home/ksy/code/ondoset_U/ai/data/similarity', exist_ok=True)
+df_U.to_csv('/home/ksy/code/ondoset_U/ai/data/similarity/User_latent_factors.csv')
 
 item_dictionary = {
     "반팔 티": 1,
@@ -314,9 +313,9 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictiona
                 thick.append(thick_comb)
             
             # user i에 대한 예측을 파일로 저장
-            os.makedirs(f'../data/predictions/CF/male/user_{i+1}', exist_ok=True)
+            os.makedirs(f'/home/ksy/code/ondoset_U/ai/data/predictions/CF/male/user_{i+1}', exist_ok=True)
             # Save predictions to file in user's directory
-            with open(f'../data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
+            with open(f'/home/ksy/code/ondoset_U/ai/data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
                 for item in predict_id:
                     f.write("%s\n" % item)   
                 for item in thick:
@@ -346,8 +345,8 @@ for i in range(UI_satis_id.shape[1]):
     temp.columns = ['옷 id', '예측값']
     # UI_satis의 해당하는 user_id column의 각 값에 대해 j값을 뺌
     # user i에 대한 예측을 파일로 저장
-    os.makedirs(f'../data/satisfaction/CF/male/user_{i+1}', exist_ok=True)
-    temp.to_csv(f'../data/satisfaction/CF/male/user_{user_id}/satifaction.csv', index=False, header=True)
+    os.makedirs(f'/home/ksy/code/ondoset_U/ai/data/satisfaction/CF/male/user_{i+1}', exist_ok=True)
+    temp.to_csv(f'/home/ksy/code/ondoset_U/ai/data/satisfaction/CF/male/user_{user_id}/satifaction.csv', index=False, header=True)
 
 # 전체 데이터 개수를 반환
-print(f'Number of data: {len(df_outfit)}')
+print(f'{len(df_outfit)}')
