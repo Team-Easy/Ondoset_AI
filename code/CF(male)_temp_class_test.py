@@ -12,10 +12,10 @@ iterations = int(iterations)
 learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
-print(model_version, num_features, iterations, learning_rate, lambda_, count_weight)
+'''print(model_version, num_features, iterations, learning_rate, lambda_, count_weight)'''
 
 # 저장된 모델 버전 및 체크포인트 경로 설정
-checkpoint_path = f'../model/CF/{model_version}/'
+checkpoint_path = f'../model/CF/train/{model_version}/'
 
 # CSV 파일 불러오기
 UI_temp = pd.read_csv(checkpoint_path + 'UI_temp.csv').drop('userId', axis=1)
@@ -25,6 +25,14 @@ test_data_df = pd.read_csv(checkpoint_path + 'test_data_df.csv')
 user_category_not_valid_df = pd.read_csv(checkpoint_path + 'user_category_not_valid.csv')
 category_df = pd.read_csv(checkpoint_path + 'category.csv')
 
+UI_test = UI_temp.copy()
+# UI_test의 값을 모두 0으로 초기화
+UI_test = UI_test.map(lambda x: 0.0)
+for user in UI_temp.index:
+    for item in UI_temp.columns:
+        # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
+        if item in test_data_df[test_data_df['userId'] == user]['옷 조합'].values:
+            UI_test.loc[user, item] = test_data_df[(test_data_df['userId'] == user) & (test_data_df['옷 조합'] == item)]['평균기온(°C)'].mean()
 
 bins = category_df.values[0, 1:]
 labels = category_df.columns[1:]
@@ -37,7 +45,7 @@ Y = np.array(UI_temp)
 Y = Y.T
 count = np.array(UI_count_div)
 count = count.T
-print(Y.shape)
+'''print(Y.shape)'''
 R = Y != 0 
 n_u = Y.shape[1]
 n_o = Y.shape[0]
@@ -48,7 +56,11 @@ o_count = R.sum(axis=1)
 o_mean = o_sum / o_count
 o_mean = o_mean.reshape(-1, 1)
 
+Y_test = np.array(UI_test)
+Y_test = Y_test.T
+
 Y_stand = Y - (o_mean * R)
+Y_test_stand = Y_test - (o_mean * (Y_test != 0))
 
 # user, outfit의 수
 n_o, n_u = Y.shape
@@ -125,7 +137,7 @@ def test(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_categor
 
 precision, recall, f1_score = test(O, U, b, o_mean, count, count_weight, test_data_df, UI_temp, labels, user_category_not_valid_df)
 
-data = {'precision': [precision], 'recall': [recall], 'f1_score': [f1_score]}
+data = {'loss': [cofi_cost_func_v(O, U, b, Y_test_stand, R, lambda_).numpy().astype('float64')], 'precision': [precision], 'recall': [recall], 'f1_score': [f1_score]}
 json_data = json.dumps(data)
 print(json_data)
 

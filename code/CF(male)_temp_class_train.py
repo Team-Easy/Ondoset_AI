@@ -19,7 +19,7 @@ iterations = int(iterations)
 learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
-print(num_features, iterations, learning_rate, lambda_, count_weight)
+'''print(num_features, iterations, learning_rate, lambda_, count_weight)'''
 
 # csv 파일을 dataframe으로 변환
 df_outfit = pd.read_csv('../data/outfit(male)/outfit(male).csv')
@@ -337,7 +337,7 @@ def save_variables_optimizer(variables, optimizer, filename):
 
 # 훈련된 tf.Variable 파일로 저장
 model_version = '1.0'
-checkpoint_path = f'../model/CF/{model_version}/'
+checkpoint_path = f'../model/CF/train/{model_version}/'
 os.makedirs(checkpoint_path, exist_ok=True)
 
 save_variables_optimizer({"O": O, "U": U, "b": b}, optimizer,  checkpoint_path+"parameters.ckpt")

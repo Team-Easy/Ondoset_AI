@@ -187,6 +187,7 @@ for iter in range(iterations):
 
 # U의 값을 csv 파일로 저장
 df_U = pd.DataFrame(U.numpy(), index=UI_temp.index, columns=np.ndarray.tolist(np.arange(1, num_features+1)))
+os.makedirs('../data/similarity', exist_ok=True)
 df_U.to_csv('../data/similarity/User_latent_factors.csv')
 
 item_dictionary = {
@@ -306,10 +307,10 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictiona
             predict_id = to_id(item_dictionary, predict)
             
             thick = []
-            for predict in predict_id:
+            for k in predict_id:
                 thick_comb = []
-                for item in predict:
-                    thick_comb.append('null')
+                for item in k:
+                    thick_comb.append(-2)
                 thick.append(thick_comb)
             
             # user i에 대한 예측을 파일로 저장
@@ -348,4 +349,5 @@ for i in range(UI_satis_id.shape[1]):
     os.makedirs(f'../data/satisfaction/CF/male/user_{i+1}', exist_ok=True)
     temp.to_csv(f'../data/satisfaction/CF/male/user_{user_id}/satifaction.csv', index=False, header=True)
 
-print('complete!')
+# 전체 데이터 개수를 반환
+print(f'Number of data: {len(df_outfit)}')
