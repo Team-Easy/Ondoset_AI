@@ -117,7 +117,7 @@ train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C
 UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=0)
 
 # pivot_table을 이용한 user_
-UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='size', fill_value=0)
+UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='size', fill_value=-2.0)
 # 해당 user의 총 예제 개수로 각각의 row를 나눔
 UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
 

@@ -25,7 +25,7 @@ category_df = pd.read_csv(checkpoint_path + 'category.csv')
 
 UI_test = UI_temp.copy()
 # UI_test의 값을 모두 0으로 초기화
-UI_test = UI_test.map(lambda x: 0.0)
+UI_test = UI_test.map(lambda x: -2.0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -57,7 +57,7 @@ Y_test = np.array(UI_test)
 Y_test = Y_test.T
 
 Y_stand = Y - (o_mean * R)
-Y_test_stand = Y_test - (o_mean * (Y_test != 0))
+Y_test_stand = Y_test - (o_mean * (Y_test != -2.0))
 
 # user, outfit의 수
 n_o, n_u = Y.shape

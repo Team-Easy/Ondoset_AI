@@ -154,11 +154,11 @@ test_data_df['평균기온(°C)'] = test_data_df['평균기온(°C)'].astype('fl
 # pivot_table을 이용한 user-item matrix 생성
 train_data_df_value = train_data_df.copy()
 train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C)'].astype('float32')
-UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=0)
+UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=-2.0)
 
 UI_val = UI_temp.copy()
 # UI_val의 값을 모두 0으로 초기화
-UI_val = UI_val.map(lambda x: 0.0)
+UI_val = UI_val.map(lambda x: -2.0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # validation에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -167,7 +167,7 @@ for user in UI_temp.index:
 
 UI_test = UI_temp.copy()
 # UI_test의 값을 모두 0으로 초기화
-UI_test = UI_test.map(lambda x: 0.0)
+UI_test = UI_test.map(lambda x: -2.0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -180,7 +180,7 @@ UI_count = train_data_df.pivot_table( index='userId', columns='옷 조합', aggf
 UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
 
 # user-item matrix에 기록된 값이 존재하는 경우 1, 아닌 경우 0으로 변환하여 R_df에 기록
-R_df = UI_temp.map(lambda x: 1 if x != 0 else 0)
+R_df = UI_temp.map(lambda x: 1 if x != -2 else 0)
 R_np = np.array(R_df)
 R_np.sum(axis=0)
 
@@ -211,8 +211,8 @@ o_mean = o_sum / o_count
 o_mean = o_mean.reshape(-1, 1)
 
 Y_stand = Y - (o_mean * R)
-Y_val_stand = Y_val - (o_mean * (Y_val != 0))
-Y_test_stand = Y_test - (o_mean * (Y_test != 0))
+Y_val_stand = Y_val - (o_mean * (Y_val != -2))
+Y_test_stand = Y_test - (o_mean * (Y_test != -2))
 
 
 def cofi_cost_func_v(O, U, b, Y, R, lambda_):
