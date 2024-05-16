@@ -154,11 +154,11 @@ test_data_df['평균기온(°C)'] = test_data_df['평균기온(°C)'].astype('fl
 # pivot_table을 이용한 user-item matrix 생성
 train_data_df_value = train_data_df.copy()
 train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C)'].astype('float32')
-UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=-2.0)
+UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=-0.2)
 
 UI_val = UI_temp.copy()
 # UI_val의 값을 모두 0으로 초기화
-UI_val = UI_val.map(lambda x: -2.0)
+UI_val = UI_val.map(lambda x: -0.2)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # validation에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -167,7 +167,7 @@ for user in UI_temp.index:
 
 UI_test = UI_temp.copy()
 # UI_test의 값을 모두 0으로 초기화
-UI_test = UI_test.map(lambda x: -2.0)
+UI_test = UI_test.map(lambda x: -0.2)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
