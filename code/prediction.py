@@ -122,7 +122,7 @@ UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='
 UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
 
 # user-item matrix에 기록된 값이 존재하는 경우 1, 아닌 경우 0으로 변환하여 R_df에 기록
-R_df = UI_temp.map(lambda x: 1 if x != 0 else 0)
+R_df = UI_temp.map(lambda x: 1 if x != -0.2 else 0)
 R_np = np.array(R_df)
 R_np.sum(axis=0)
 
