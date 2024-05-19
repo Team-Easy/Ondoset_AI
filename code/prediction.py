@@ -6,6 +6,7 @@ import keras
 import os
 import sys
 import configparser
+import preprocess_ow
 
 num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -22,99 +23,7 @@ config.read('config.ini')
 df_outfit = pd.read_csv(config.get('FilePaths', 'outfit'))
 df_weather = pd.read_csv(config.get('FilePaths', 'weather'), encoding='cp949')
 
-# 필요한 columns만 추출
-df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
-df_temp = df_weather[['일시', '평균기온(°C)']].copy()
-
-# '작성일'과 '일시' 열을 datetime 형식으로 변환
-df_outfit['작성일'] = pd.to_datetime(df_outfit['작성일'], format='%Y년 %m월 %d일')
-df_temp['일시'] = pd.to_datetime(df_temp['일시'])
-
-# 두 dataframe을 날짜를 기준으로 병합
-df_merged = pd.merge(df_outfit, df_temp, left_on='작성일', right_on='일시').drop('일시', axis=1)
-
-# '상의', '아우터', '하의', '신발', '엑세서리' 열의 결측값을 '~ 없음'으로 대체
-columns = ['상의', '아우터', '하의', '신발', '액세서리']
-df_notnull = df_merged.copy()
-for column in columns:
-    df_notnull[column] = df_merged[column].fillna(column + ' 없음')
-
-# 2가 붙은 단어를 두 번 반복하는 함수
-def duplicate_word(text):
-    words = text.split(', ')
-    for i, word in enumerate(words):
-        if '2' in word:
-            words[i] = word.replace('2', '') + ', ' + word.replace('2', '')
-    return ', '.join(words)
-
-
-# 2가 붙은 단어를 두 번 반복한 dataframe df_dup 생성
-df_dup = df_notnull.copy()
-for column in columns:
-    df_dup[columns] = df_notnull[columns].map(duplicate_word)
-
-
-# 옷의 조합 컬럼 생성 (상의, 아우터, 하의, 신발, 엑세서리의 각 값들을 하나의 문자열로 조합하여 하나의 컬럼으로 만듦)
-df_combination = df_dup.copy()
-df_combination['옷 조합'] = df_dup['상의'] + ', ' + df_dup['아우터'] + ', ' + df_dup['하의'] + ', ' + df_dup['신발'] + ', ' + df_dup['액세서리']
-df_combination.drop(columns=['상의', '아우터', '하의', '신발', '액세서리'], inplace=True)
-
-# 쉼표를 기준으로 텍스트를 나누는 함수
-def comma_tokenizer(s):
-    return s.split(', ')
-
-vectorizer = CountVectorizer(tokenizer=comma_tokenizer)
-
-O = vectorizer.fit_transform(df_combination['옷 조합'])
-
-# multi-hot encoding된 데이터를 numpy array로 변환
-df_encoded = pd.DataFrame(O.toarray().tolist(), columns=vectorizer.get_feature_names_out())
-npa = np.array(df_encoded)
-
-# 값이 2 이상인 행의 인덱스
-rows_with_value_2 = df_encoded[(df_encoded >= 2).any(axis=1)]
-rows_with_value_2.index
-
-# 값이 2 이상인 열의 이름을 찾습니다.
-columns_with_value_over_2 = df_encoded.columns[(df_encoded >= 2).any()]
-
-# 특정 행에 대해 이를 기록합니다.
-record = df_encoded.loc[rows_with_value_2.index, columns_with_value_over_2]
-
-# numpy array를 list로 변환 후 clothes_combination 컬럼에 대입
-df_combination['옷 조합'] = npa.tolist()
-
-# multi-hot encoding된 데이터를 다시 텍스트로 변환
-df_combination['옷 조합'] = vectorizer.inverse_transform(npa)
-
-# 하나의 문자열로 변환
-df_combtest = df_combination.copy()
-df_combtest['옷 조합'] = df_combination['옷 조합'].apply(lambda x: ', '.join(map(str, x)))
-
-# multi-hot encoding의 값이 2 이상인 경우, 해당 단어를 두 번 반복
-for i in record.index:
-    old_value = df_combtest.loc[i, '옷 조합']
-    for col in record.columns:
-        if record.loc[i, col] >= 2:
-            old_value = old_value.replace(col, col + ', ' + col)
-    df_combtest.loc[i, '옷 조합'] = old_value
-
-# 평균기온(°C) column의 최대값과 최솟값
-max_temp = df_combtest['평균기온(°C)'].max()
-min_temp = df_combtest['평균기온(°C)'].min()
-
-df_limit = df_combtest.copy()
-
-def create_bins(min_temp, max_temp, step=5):
-    bins = np.arange(min_temp, max_temp, step).tolist()
-    bins = np.round(bins, 1).tolist()
-    bins = [-np.inf] + bins + [np.inf]
-    return bins
-
-bins = create_bins(min_temp, max_temp)
-
-labels=np.arange(1, (max_temp-min_temp)//5+3)
-df_limit['평균기온(°C)'] = pd.cut(df_limit['평균기온(°C)'], bins=bins, labels=labels)
+df_limit, bins, labels = preprocess_ow.process_data(df_outfit, df_weather)
 
 # pivot_table을 이용한 user-item matrix 생성
 train_data_df_value = df_limit.copy()
