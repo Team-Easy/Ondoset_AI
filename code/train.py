@@ -1,10 +1,6 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import MultiLabelBinarizer
-import re
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 import keras
@@ -12,6 +8,7 @@ from sklearn.model_selection import train_test_split
 import os
 import sys
 import json
+import configparser
 
 version, num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -20,9 +17,14 @@ learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
+# 경로 설정 파일
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv(config.get('FilePaths', 'outfit'))
+df_weather = pd.read_csv(config.get('FilePaths', 'weather'), encoding='cp949')
+
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -72,7 +74,6 @@ O = vectorizer.fit_transform(df_combination['옷 조합'])
 # multi-hot encoding된 데이터를 numpy array로 변환
 df_encoded = pd.DataFrame(O.toarray().tolist(), columns=vectorizer.get_feature_names_out())
 npa = np.array(df_encoded)
-'''npa.shape'''
 
 # 값이 2 이상인 행의 인덱스
 rows_with_value_2 = df_encoded[(df_encoded >= 2).any(axis=1)]
@@ -108,8 +109,16 @@ min_temp = df_combtest['평균기온(°C)'].min()
 
 df_limit = df_combtest.copy()
 # 평균기온(°C) column을 5도 간격으로 범주화하여 0, 1, 2, ...로 변환
-bins=np.round(np.arange(min_temp -5, max_temp+5, 5), 1)
-labels=np.arange(0, (max_temp-min_temp)//5+2)
+
+def create_bins(min_temp, max_temp, step=5):
+    bins = np.arange(min_temp, max_temp, step).tolist()
+    bins = np.round(bins, 1).tolist()
+    bins = [-np.inf] + bins + [np.inf]
+    return bins
+
+bins = create_bins(min_temp, max_temp)
+
+labels=np.arange(1, (max_temp-min_temp)//5+3)
 df_limit['평균기온(°C)'] = pd.cut(df_limit['평균기온(°C)'], bins=bins, labels=labels)
 
 # '평균기온(°C)'의 각 범주를 고려하여 데이터를 분할
@@ -154,11 +163,11 @@ test_data_df['평균기온(°C)'] = test_data_df['평균기온(°C)'].astype('fl
 # pivot_table을 이용한 user-item matrix 생성
 train_data_df_value = train_data_df.copy()
 train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C)'].astype('float32')
-UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=-0.2)
+UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=0)
 
 UI_val = UI_temp.copy()
 # UI_val의 값을 모두 0으로 초기화
-UI_val = UI_val.map(lambda x: -0.2)
+UI_val = UI_val.map(lambda x: 0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # validation에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -167,7 +176,7 @@ for user in UI_temp.index:
 
 UI_test = UI_temp.copy()
 # UI_test의 값을 모두 0으로 초기화
-UI_test = UI_test.map(lambda x: -0.2)
+UI_test = UI_test.map(lambda x: 0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -180,7 +189,7 @@ UI_count = train_data_df.pivot_table( index='userId', columns='옷 조합', aggf
 UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
 
 # user-item matrix에 기록된 값이 존재하는 경우 1, 아닌 경우 0으로 변환하여 R_df에 기록
-R_df = UI_temp.map(lambda x: 1 if x != -0.2 else 0)
+R_df = UI_temp.map(lambda x: 1 if x != 0 else 0)
 R_np = np.array(R_df)
 R_np.sum(axis=0)
 
@@ -211,8 +220,8 @@ o_mean = o_sum / o_count
 o_mean = o_mean.reshape(-1, 1)
 
 Y_stand = Y - (o_mean * R)
-Y_val_stand = Y_val - (o_mean * (Y_val != -0.2))
-Y_test_stand = Y_test - (o_mean * (Y_test != -0.2))
+Y_val_stand = Y_val - (o_mean * (Y_val != 0))
+Y_test_stand = Y_test - (o_mean * (Y_test != 0))
 
 
 def cofi_cost_func_v(O, U, b, Y, R, lambda_):
@@ -233,7 +242,7 @@ b = tf.Variable(tf.random.normal((1,          n_u),   dtype=tf.float64),  name='
 # optimizer 초기화
 optimizer = keras.optimizers.Adam(learning_rate = learning_rate)
 
-J = cofi_cost_func_v(O, U, b, Y_stand, R, 1.5)
+J = cofi_cost_func_v(O, U, b, Y_stand, R, 1)
 
 def metrics(O, U, b, o_mean, count, count_weight, df, UI_temp, labels, user_category_not_valid) :
     # 예측을 수행하기 위해 모든 user-item에 대한 예측값을 계산
@@ -327,7 +336,8 @@ def save_variables_optimizer(variables, optimizer, filename):
 
 # 훈련된 tf.Variable 파일로 저장
 model_version = version
-checkpoint_path = f'/home/t24119/v1.0src/ai/model/CF/train/{model_version}/'
+model_base = config.get('FilePaths', 'model')
+checkpoint_path = f'{model_base}{model_version}/'
 os.makedirs(checkpoint_path, exist_ok=True)
 
 save_variables_optimizer({"O": O, "U": U, "b": b}, optimizer,  checkpoint_path+"parameters.ckpt")

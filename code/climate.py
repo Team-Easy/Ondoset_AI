@@ -3,12 +3,12 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 import requests
-from xml.etree import ElementTree as ET
 import datetime
 import time
 import json
 import warnings
 import sys
+import configparser
 warnings.filterwarnings('ignore')
 
 userId, lat, lon, date, timeFromToday = sys.argv[1:]
@@ -80,9 +80,14 @@ rain = any(r > 0 for r in rain)
 avg_wind = sum(wind) / len(wind)
 avg_humidity = sum(humidity) / len(humidity)
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+outfit_base = config.get('FilePaths', 'outfit')
+weather_base = config.get('FilePaths', 'weather')
+
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv(outfit_base)
+df_weather = pd.read_csv(weather_base, encoding='cp949')
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)', '평균 풍속(m/s)', '평균 상대습도(%)']].copy()

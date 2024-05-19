@@ -4,6 +4,7 @@ import tensorflow as tf
 import keras
 import sys
 import json
+import configparser
 
 model_version, num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -12,8 +13,11 @@ learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+model_base = config.get('FilePaths', 'model')
 # 저장된 모델 버전 및 체크포인트 경로 설정
-checkpoint_path = f'/home/t24119/v1.0src/ai/model/CF/train/{model_version}/'
+checkpoint_path = f'{model_base}{model_version}/'
 
 # CSV 파일 불러오기
 UI_temp = pd.read_csv(checkpoint_path + 'UI_temp.csv').drop('userId', axis=1)

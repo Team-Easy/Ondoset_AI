@@ -1,16 +1,11 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import MultiLabelBinarizer
-import re
 from sklearn.feature_extraction.text import CountVectorizer
 import tensorflow as tf
 import keras
-from sklearn.model_selection import train_test_split
 import os
 import sys
-
+import configparser
 
 num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -19,9 +14,14 @@ learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
+# 경로 설정 파일
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 # csv 파일을 dataframe으로 변환
-df_outfit = pd.read_csv('/home/t24119/v1.0src/ai/data/outfit(male)/outfit(male).csv')
-df_weather = pd.read_csv('/home/t24119/v1.0src/ai/data/2022-08-01_to_2024-04-30.csv', encoding='cp949')
+df_outfit = pd.read_csv(config.get('FilePaths', 'outfit'))
+df_weather = pd.read_csv(config.get('FilePaths', 'weather'), encoding='cp949')
+
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)']].copy()
@@ -102,19 +102,24 @@ for i in record.index:
 # 평균기온(°C) column의 최대값과 최솟값
 max_temp = df_combtest['평균기온(°C)'].max()
 min_temp = df_combtest['평균기온(°C)'].min()
-'''print(max_temp, min_temp)'''
 
 df_limit = df_combtest.copy()
-# 평균기온(°C) column을 5도 간격으로 범주화하여 0, 1, 2, ...로 변환
-bins=np.round(np.arange(min_temp -5, max_temp+5, 5), 1)
-labels=np.arange(0, (max_temp-min_temp)//5+2)
+
+def create_bins(min_temp, max_temp, step=5):
+    bins = np.arange(min_temp, max_temp, step).tolist()
+    bins = np.round(bins, 1).tolist()
+    bins = [-np.inf] + bins + [np.inf]
+    return bins
+
+bins = create_bins(min_temp, max_temp)
+
+labels=np.arange(1, (max_temp-min_temp)//5+3)
 df_limit['평균기온(°C)'] = pd.cut(df_limit['평균기온(°C)'], bins=bins, labels=labels)
-'''df_limit'''
 
 # pivot_table을 이용한 user-item matrix 생성
 train_data_df_value = df_limit.copy()
 train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C)'].astype('float32')
-UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=-0.2)
+UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=0)
 
 # pivot_table을 이용한 user_
 UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='size', fill_value=0.0)
@@ -122,7 +127,7 @@ UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='
 UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
 
 # user-item matrix에 기록된 값이 존재하는 경우 1, 아닌 경우 0으로 변환하여 R_df에 기록
-R_df = UI_temp.map(lambda x: 1 if x != -0.2 else 0)
+R_df = UI_temp.map(lambda x: 1 if x != 0 else 0)
 R_np = np.array(R_df)
 R_np.sum(axis=0)
 
@@ -185,9 +190,10 @@ for iter in range(iterations):
         train_loss = cost_value.numpy()
 
 # U의 값을 csv 파일로 저장
+similarity_base = config.get('FilePaths', 'similarity')
 df_U = pd.DataFrame(U.numpy(), index=UI_temp.index, columns=np.ndarray.tolist(np.arange(1, num_features+1)))
-os.makedirs('/home/t24119/v1.0src/ai/data/similarity', exist_ok=True)
-df_U.to_csv('/home/t24119/v1.0src/ai/data/similarity/User_latent_factors.csv')
+os.makedirs(f'{similarity_base}', exist_ok=True)
+df_U.to_csv(f'{similarity_base}/User_latent_factors.csv')
 
 item_dictionary = {
     "반팔 티": 1,
@@ -312,13 +318,20 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictiona
                     thick_comb.append(-2)
                 thick.append(thick_comb)
             
+            predict_base = config.get('FilePaths', 'predict')
+            
             # user i에 대한 예측을 파일로 저장
-            os.makedirs(f'/home/t24119/v1.0src/ai/data/predictions/CF/male/user_{i+1}', exist_ok=True)
+            os.makedirs(f'{predict_base}male/user_{i+1}', exist_ok=True)
+            os.makedirs(f'{predict_base}male/debug/user_{i+1}', exist_ok=True)
             # Save predictions to file in user's directory
-            with open(f'/home/t24119/v1.0src/ai/data/predictions/CF/male/user_{i+1}/predictions_{category}.txt', 'w') as f:
+            with open(f'{predict_base}male/user_{i+1}/predictions_{category}.txt', 'w') as f:
                 for item in predict_id:
                     f.write("%s\n" % item)   
                 for item in thick:
+                    f.write("%s\n" % item)   
+            
+            with open(f'{predict_base}male/debug/user_{i+1}/predictions_{category}_tag.txt', 'w') as f:
+                for item in predict:
                     f.write("%s\n" % item)          
 
 predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictionary)
@@ -336,6 +349,8 @@ UI_satis = pd.DataFrame(p_round, columns=UI_temp.index, index=UI_temp.columns)
 UI_satis_id = UI_satis.copy()
 UI_satis_id.index = index_id(item_dictionary, UI_satis_id.index.astype(str))
 
+satisfaction_base = config.get('FilePaths', 'satisfaction')
+
 for i in range(UI_satis_id.shape[1]):
     user_id = UI_satis_id.columns[i]
     temp = UI_satis_id.copy()
@@ -345,8 +360,8 @@ for i in range(UI_satis_id.shape[1]):
     temp.columns = ['옷 id', '예측값']
     # UI_satis의 해당하는 user_id column의 각 값에 대해 j값을 뺌
     # user i에 대한 예측을 파일로 저장
-    os.makedirs(f'/home/t24119/v1.0src/ai/data/satisfaction/CF/male/user_{i+1}', exist_ok=True)
-    temp.to_csv(f'/home/t24119/v1.0src/ai/data/satisfaction/CF/male/user_{user_id}/satifaction.csv', index=False, header=True)
+    os.makedirs(f'{satisfaction_base}male/user_{i+1}', exist_ok=True)
+    temp.to_csv(f'{satisfaction_base}male/user_{user_id}/satifaction.csv', index=False, header=True)
 
 # 전체 데이터 개수를 반환
 print(f'{len(df_outfit)}')

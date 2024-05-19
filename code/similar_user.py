@@ -1,11 +1,16 @@
 import pandas as pd
 import sys
 from sklearn.metrics.pairwise import cosine_similarity
+import configparser
 
 user_id,= sys.argv[1:]
 user_id = int(user_id)
 
-latent_factor = pd.read_csv('/home/t24119/v1.0src/ai/data/similarity/User_latent_factors.csv')
+config = configparser.ConfigParser()
+config.read('config.ini')
+similarity_base = config.get('FilePaths', 'similarity')
+
+latent_factor = pd.read_csv(f'{similarity_base}/User_latent_factors.csv')
 
 latent_columns = latent_factor.columns[1:]
 
