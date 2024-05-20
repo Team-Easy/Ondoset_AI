@@ -5,6 +5,9 @@ import sys
 import configparser
 from collections import Counter
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 def predict_satisfaction(today_class, satis):
     pred_satis = today_class - satis
     satis_string = ''
@@ -46,9 +49,6 @@ user_id, today, items_id, thicknesses = sys.argv[1:]
 user_id = int(user_id)
 today = float(today)
 
-config = configparser.ConfigParser()
-config.read('config.ini')
-
 # csv 파일을 dataframe으로 변환
 df_outfit = pd.read_csv(config.get('FilePaths', 'outfit'))
 df_weather = pd.read_csv(config.get('FilePaths', 'weather'), encoding='cp949')
@@ -88,10 +88,10 @@ target_ids = items_id[1:-1]
 exact_same_df = exact_same(target_ids, df_satisfaction)
 if len(exact_same_df) > 0:
     item_satis = exact_same_df.iloc[0]['예측값']
-    print(f'today_class: {today_class}')
+    '''print(f'today_class: {today_class}')
     print(f'item_satis: {item_satis}')
     print(f'exact_same: {exact_same_df.iloc[0]["옷 id"], predict_satisfaction(today_class, item_satis)}')
-    print(f'{predict_satisfaction(today_class, item_satis)}')
+    print(f'{predict_satisfaction(today_class, item_satis)}')'''
     exit()
 
 similar_combinations = find_similar_combinations(target_ids, df_satisfaction)
@@ -102,9 +102,9 @@ similar_combinations = similar_combinations.sort_values(by='intersection', ascen
 # 가장 비슷한 조합의 예측값을 가져옴
 if len(similar_combinations) > 0:
     item_satis = similar_combinations.iloc[0]['예측값']
-    print(f'today_class: {today_class}')
+    '''print(f'today_class: {today_class}')
     print(f'item_satis: {item_satis}')
-    print(f'similar_combinations: {similar_combinations.iloc[0]["옷 id"], predict_satisfaction(today_class, similar_combinations.iloc[0]["예측값"])}')
+    print(f'similar_combinations: {similar_combinations.iloc[0]["옷 id"], predict_satisfaction(today_class, similar_combinations.iloc[0]["예측값"])}')'''
 else:
     print("No similar combinations found.")
 
@@ -113,9 +113,9 @@ if len(similar_combinations) > 0:
     item_satis = similar_combinations.iloc[0]['예측값']
     similar_ids = similar_combinations.iloc[0]['옷 id']
     adjustment_value = adjust_satisfaction_by_item_count(target_ids, similar_ids)
-    print(f'adjustment_value: {adjustment_value}')
+    '''print(f'adjustment_value: {adjustment_value}')'''
     adjusted_satis = item_satis - 1.5 * adjustment_value
-    print(f'adjusted_satis: {adjusted_satis}')
+    '''print(f'adjusted_satis: {adjusted_satis}')'''
 else:
     print("No similar combinations found.")
     adjusted_satis = item_satis

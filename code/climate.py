@@ -16,6 +16,9 @@ userId = int(userId)
 date = int(date)
 timeFromToday = int(timeFromToday)
 
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 # epoch time을 datetime 형식으로 변환
 def epoch_to_datetime(epoch_time):
     return datetime.fromtimestamp(epoch_time)
@@ -80,8 +83,6 @@ rain = any(r > 0 for r in rain)
 avg_wind = sum(wind) / len(wind)
 avg_humidity = sum(humidity) / len(humidity)
 
-config = configparser.ConfigParser()
-config.read('config.ini')
 outfit_base = config.get('FilePaths', 'outfit')
 weather_base = config.get('FilePaths', 'weather')
 
