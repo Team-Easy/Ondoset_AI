@@ -8,9 +8,11 @@ user_id = int(user_id)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
+
 similarity_base = config.get('FilePaths', 'similarity')
 
 latent_factor = pd.read_csv(f'{similarity_base}/User_latent_factors.csv')
+latent_factor = latent_factor[latent_factor['userId'] > 0]
 
 latent_columns = latent_factor.columns[1:]
 

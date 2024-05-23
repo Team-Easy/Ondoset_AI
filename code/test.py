@@ -15,6 +15,7 @@ count_weight = float(count_weight)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
+
 model_base = config.get('FilePaths', 'model')
 # 저장된 모델 버전 및 체크포인트 경로 설정
 checkpoint_path = f'{model_base}{model_version}/'

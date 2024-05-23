@@ -89,6 +89,10 @@ weather_base = config.get('FilePaths', 'weather')
 # csv 파일을 dataframe으로 변환
 df_outfit = pd.read_csv(outfit_base)
 df_weather = pd.read_csv(weather_base, encoding='cp949')
+
+# df_outfit의 userId = 0인 row를 제외
+df_outfit = df_outfit[df_outfit['userId'] != 0]
+
 # 필요한 columns만 추출
 df_outfit = df_outfit[['userId', '상의', '아우터', '하의', '신발', '액세서리', '작성일']].copy()
 df_temp = df_weather[['일시', '평균기온(°C)', '최저기온(°C)', '최고기온(°C)', '강수 계속시간(hr)', '평균 풍속(m/s)', '평균 상대습도(%)']].copy()

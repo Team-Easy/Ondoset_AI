@@ -30,10 +30,23 @@ train_data_df_value = df_limit.copy()
 train_data_df_value['평균기온(°C)'] = train_data_df_value['평균기온(°C)'].astype('float32')
 UI_temp = train_data_df_value.pivot_table(index='userId', columns='옷 조합', values='평균기온(°C)', fill_value=0)
 
+# 첫번째 행의 모든 값을 0으로 변경
+UI_temp.iloc[0] = 0
+
 # pivot_table을 이용한 user_
 UI_count = df_limit.pivot_table( index='userId', columns='옷 조합', aggfunc='size', fill_value=0.0)
-# 해당 user의 총 예제 개수로 각각의 row를 나눔
-UI_count_div = UI_count.div(UI_count.sum(axis=1), axis=0)
+
+# 첫번째 행의 모든 값을 1으로 변경
+UI_count.iloc[0] = 1
+
+# 해당 user의 총 예제 개수로 각각의 row를 나눔 (여기서 해당 유저의 총 예제 개수가 100개가 안된다면 100개로 나눔)
+UI_sum = UI_count.sum(axis=1)
+UI_sum[UI_sum < 200] = 200  # 총 예제 개수가 100개 미만인 경우 100으로 설정
+UI_count_div = UI_count.div(UI_sum, axis=0)
+
+# UI_temp에서 상의 없음, 신발 없음, 아우터 없음, 액세서리 없음, 하의 없음 열 삭제
+UI_temp = UI_temp.drop(columns=['상의 없음, 신발 없음, 아우터 없음, 액세서리 없음, 하의 없음'], axis=1)
+UI_count_div =  UI_count_div.drop(columns=['상의 없음, 신발 없음, 아우터 없음, 액세서리 없음, 하의 없음'], axis=1)
 
 # user-item matrix에 기록된 값이 존재하는 경우 1, 아닌 경우 0으로 변환하여 R_df에 기록
 R_df = UI_temp.map(lambda x: 1 if x != 0 else 0)
@@ -76,8 +89,6 @@ b = tf.Variable(tf.random.normal((1,          n_u),   dtype=tf.float64),  name='
 
 # optimizer 초기화
 optimizer = keras.optimizers.Adam(learning_rate = learning_rate)
-
-J = cofi_cost_func_v(O, U, b, Y_stand, R, 1.5)
 
 for iter in range(iterations):
     # TensorFlow의 GradientTape 사용
@@ -230,18 +241,18 @@ def predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictiona
             predict_base = config.get('FilePaths', 'predict')
             
             # user i에 대한 예측을 파일로 저장
-            os.makedirs(f'{predict_base}male/user_{i+1}', exist_ok=True)
-            os.makedirs(f'{predict_base}male/debug/user_{i+1}', exist_ok=True)
+            os.makedirs(f'{predict_base}male/user_{i}', exist_ok=True)
+            os.makedirs(f'{predict_base}male/debug/user_{i}', exist_ok=True)
             # Save predictions to file in user's directory
-            with open(f'{predict_base}male/user_{i+1}/predictions_{category}.txt', 'w') as f:
+            with open(f'{predict_base}male/user_{i}/predictions_{category}.txt', 'w') as f:
                 for item in predict_id:
                     f.write("%s\n" % item)   
                 for item in thick:
                     f.write("%s\n" % item)   
             
-            with open(f'{predict_base}male/debug/user_{i+1}/predictions_{category}_tag.txt', 'w') as f:
+            with open(f'{predict_base}male/debug/user_{i}/predictions_{category}_tag.txt', 'w') as f:
                 for item in predict:
-                    f.write("%s\n" % item)          
+                    f.write("%s\n" % item)   
 
 predict(O, U, b, o_mean, count, count_weight, UI_temp, labels, item_dictionary)
 
@@ -269,7 +280,7 @@ for i in range(UI_satis_id.shape[1]):
     temp.columns = ['옷 id', '예측값']
     # UI_satis의 해당하는 user_id column의 각 값에 대해 j값을 뺌
     # user i에 대한 예측을 파일로 저장
-    os.makedirs(f'{satisfaction_base}male/user_{i+1}', exist_ok=True)
+    os.makedirs(f'{satisfaction_base}male/user_{i}', exist_ok=True)
     temp.to_csv(f'{satisfaction_base}male/user_{user_id}/satifaction.csv', index=False, header=True)
 
 # 전체 데이터 개수를 반환

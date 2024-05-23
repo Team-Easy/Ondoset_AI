@@ -26,6 +26,9 @@ config.read('config.ini')
 df_outfit = pd.read_csv(config.get('FilePaths', 'outfit'))
 df_weather = pd.read_csv(config.get('FilePaths', 'weather'), encoding='cp949')
 
+# df_outfit의 userId = 0인 row를 제외
+df_outfit = df_outfit[df_outfit['userId'] != 0]
+
 df_limit, bins, labels = preprocess_ow.process_data(df_outfit, df_weather)
 
 # '평균기온(°C)'의 각 범주를 고려하여 데이터를 분할
@@ -139,9 +142,12 @@ def cofi_cost_func_v(O, U, b, Y, R, lambda_):
 # user, outfit의 수
 n_o, n_u = Y.shape
 
+import time
 
 # (U,O)를 초기화하고 tf.Variable로 등록하여 추적
-tf.random.set_seed(1234) # for consistent results
+# 현재 시간을 기반으로 seed 값 생성
+seed = int(time.time())
+tf.random.set_seed(seed) # for consistent results
 U = tf.Variable(tf.random.normal((n_u,  num_features),dtype=tf.float64),  name='U')
 O = tf.Variable(tf.random.normal((n_o, num_features),dtype=tf.float64),  name='O')
 b = tf.Variable(tf.random.normal((1,          n_u),   dtype=tf.float64),  name='b')
@@ -216,7 +222,7 @@ for iter in range(iterations):
     optimizer.apply_gradients( zip(grads, [O,U,b]) )
 
     # Log periodically.
-    if (iter + 1) % 20 == 0 or iter == 0:
+    if (iter + 1) % 5 == 0 or iter == 0:
         train_loss = cost_value.numpy()
         history.append({'type': 'train_loss', 'epoch': iter + 1, 'value': train_loss})
 
@@ -234,6 +240,7 @@ data = {
 }
 json_data = json.dumps(data)
 print(json_data)
+print(f"Current seed value: {seed}")
 
 
 def save_variables_optimizer(variables, optimizer, filename):
