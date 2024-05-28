@@ -13,6 +13,8 @@ learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
+seed = 1716795825
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -30,7 +32,7 @@ category_df = pd.read_csv(checkpoint_path + 'category.csv')
 
 UI_test = UI_temp.copy()
 # UI_test의 값을 모두 0으로 초기화
-UI_test = UI_test.map(lambda x: -0.2)
+UI_test = UI_test.map(lambda x: 0)
 for user in UI_temp.index:
     for item in UI_temp.columns:
         # test에 해당 user-item이 있는 경우 해당 user-item의 평균을 기록
@@ -62,13 +64,13 @@ Y_test = np.array(UI_test)
 Y_test = Y_test.T
 
 Y_stand = Y - (o_mean * R)
-Y_test_stand = Y_test - (o_mean * (Y_test != -0.2))
+Y_test_stand = Y_test - (o_mean * (Y_test != 0))
 
 # user, outfit의 수
 n_o, n_u = Y.shape
 
 # (U,O)를 초기화하고 tf.Variable로 등록하여 추적
-tf.random.set_seed(1234) # for consistent results
+tf.random.set_seed(seed) # for consistent results
 U = tf.Variable(tf.random.normal((n_u,  num_features),dtype=tf.float64),  name='U')
 O = tf.Variable(tf.random.normal((n_o, num_features),dtype=tf.float64),  name='O')
 b = tf.Variable(tf.random.normal((1,          n_u),   dtype=tf.float64),  name='b')

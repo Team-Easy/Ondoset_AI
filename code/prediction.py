@@ -15,6 +15,8 @@ learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
 
+seed = 1716795825
+
 # 경로 설정 파일
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -43,6 +45,15 @@ UI_count.iloc[0] = 1
 UI_sum = UI_count.sum(axis=1)
 UI_sum[UI_sum < 200] = 200  # 총 예제 개수가 100개 미만인 경우 100으로 설정
 UI_count_div = UI_count.div(UI_sum, axis=0)
+
+# 0인 값을 NaN으로 변경
+UI_count_div_na = UI_count_div.replace(0, np.nan)
+
+# NaN을 제외한 모든 행의 평균 계산
+mean_values = UI_count_div_na.mean()
+
+# userId=0인 행에 평균 값 할당
+UI_count_div.loc[0] = mean_values
 
 # UI_temp에서 상의 없음, 신발 없음, 아우터 없음, 액세서리 없음, 하의 없음 열 삭제
 UI_temp = UI_temp.drop(columns=['상의 없음, 신발 없음, 아우터 없음, 액세서리 없음, 하의 없음'], axis=1)
@@ -82,7 +93,7 @@ def cofi_cost_func_v(O, U, b, Y, R, lambda_):
 n_o, n_u = Y.shape
 
 # (U,O)를 초기화하고 tf.Variable로 등록하여 추적
-tf.random.set_seed(1234) # for consistent results
+tf.random.set_seed(seed) # for consistent results
 U = tf.Variable(tf.random.normal((n_u,  num_features),dtype=tf.float64),  name='U')
 O = tf.Variable(tf.random.normal((n_o, num_features),dtype=tf.float64),  name='O')
 b = tf.Variable(tf.random.normal((1,          n_u),   dtype=tf.float64),  name='b')

@@ -10,6 +10,7 @@ import sys
 import json
 import configparser
 import preprocess_ow
+import time
 
 version, num_features, iterations, learning_rate, lambda_, count_weight = sys.argv[1:]
 num_features = int(num_features)
@@ -17,6 +18,8 @@ iterations = int(iterations)
 learning_rate = float(learning_rate)
 lambda_ = float(lambda_)
 count_weight = float(count_weight)
+
+seed = 1716795825
 
 # 경로 설정 파일
 config = configparser.ConfigParser()
@@ -142,8 +145,6 @@ def cofi_cost_func_v(O, U, b, Y, R, lambda_):
 # user, outfit의 수
 n_o, n_u = Y.shape
 
-import time
-
 # (U,O)를 초기화하고 tf.Variable로 등록하여 추적
 # 현재 시간을 기반으로 seed 값 생성
 seed = int(time.time())
@@ -240,7 +241,7 @@ data = {
 }
 json_data = json.dumps(data)
 print(json_data)
-print(f"Current seed value: {seed}")
+'''print(f"Current seed value: {seed}")'''
 
 
 def save_variables_optimizer(variables, optimizer, filename):
